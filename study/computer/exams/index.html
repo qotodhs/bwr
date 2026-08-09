@@ -32,6 +32,11 @@
         <h2 class="question-title" id="questionTitle"></h2>
         <div class="answers" id="answers"></div>
         <div class="explanation" id="explanation" hidden></div>
+        <div class="note-editor" id="noteEditor" hidden>
+          <label for="userExplanation">내 해설 · 학습 메모</label>
+          <textarea id="userExplanation" rows="4" placeholder="왜 이 답이 맞는지, 내가 틀린 이유나 외울 포인트를 적어보세요."></textarea>
+          <div><button id="saveExplanation" type="button">내 해설 저장</button><span id="noteStatus" aria-live="polite"></span></div>
+        </div>
         <div class="quiz-nav"><button id="quitQuiz" type="button">학습 종료</button><button id="nextQuestion" type="button" disabled>다음 문제 →</button></div>
       </section>
 

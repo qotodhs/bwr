@@ -1,4 +1,4 @@
-const questions = [
+window.BWR_QUESTIONS = [
   {id:"q01",source:"set03",subject:"computer",q:"지리적으로 분산된 여러 컴퓨터의 자원을 연결해 하나의 고성능 컴퓨터처럼 활용하는 기술은?",c:["클라우드 컴퓨팅","그리드 컴퓨팅","사물 인터넷","빅데이터"],a:1,e:"그리드 컴퓨팅은 분산된 컴퓨팅 자원을 묶어 대규모 계산에 활용합니다."},
   {id:"q02",source:"set03",subject:"computer",q:"시스템 날짜, 부팅 순서, 전원 관리와 PnP 설정을 확인하거나 수정하는 데 관련된 메모리는?",c:["HDMI","POST","CMOS","RAID"],a:2,e:"CMOS에는 시스템 시간과 기본 하드웨어 설정 정보가 저장됩니다."},
   {id:"q03",source:"set03",subject:"computer",q:"IPv6 주소 체계에 대한 설명으로 옳은 것은?",c:["32비트 주소를 사용한다","10진수와 점으로 표현한다","연속된 0은 ::로 한 번 줄일 수 있다","IPv4와 호환성이 전혀 없다"],a:2,e:"IPv6는 128비트이며 16진수와 콜론을 사용하고, 연속된 0은 ::로 한 번 생략할 수 있습니다."},
@@ -25,8 +25,13 @@ const questions = [
   {id:"q24",source:"set03",subject:"spreadsheet",q:"C2:C8에서 평균 이상인 값의 개수를 구하는 수식으로 옳은 것은?",c:["=COUNTIF(C2:C8,\">=\"&AVERAGE(C2:C8))","=COUNTIF(C2:C8,AVERAGE(C2:C8))","=AVERAGEIF(C2:C8,\">=\")","=COUNT(C2:C8>=AVERAGE(C2:C8))"],a:0,e:"비교 연산자 문자열과 AVERAGE 결과를 &로 연결합니다."}
 ];
 
+if (document.getElementById("startQuiz")) {
+const questions = window.BWR_QUESTIONS;
+
 const wrongKey = "bwr-computer-wrong-v1";
+const noteKey = "bwr-computer-explanations-v1";
 let wrong = new Set(JSON.parse(localStorage.getItem(wrongKey) || "[]"));
+let userNotes = JSON.parse(localStorage.getItem(noteKey) || "{}");
 let queue = [], index = 0, score = 0, answered = false, seconds = 0, timerId = null;
 const $ = (id) => document.getElementById(id);
 const shuffle = (items) => [...items].sort(() => Math.random() - .5);
@@ -54,7 +59,7 @@ function renderQuestion() {
   answered = false; const item = queue[index];
   $("questionPosition").textContent = `${index+1} / ${queue.length}`;
   $("questionSource").textContent = `${item.source === "set02" ? "2026 상시 02" : "2026 상시 03"} 출제 주제 · ${item.subject === "computer" ? "컴퓨터 일반" : "스프레드시트 일반"}`;
-  $("questionTitle").textContent = item.q; $("answers").replaceChildren(); $("explanation").hidden = true; $("nextQuestion").disabled = true;
+  $("questionTitle").textContent = item.q; $("answers").replaceChildren(); $("explanation").hidden = true; $("noteEditor").hidden = true; $("userExplanation").value = userNotes[item.id] || ""; $("noteStatus").textContent = ""; $("nextQuestion").disabled = true;
   item.c.forEach((choice, choiceIndex) => { const button=document.createElement("button"); button.className="answer-option"; button.innerHTML=`<span class="answer-number">${choiceIndex+1}</span><span>${choice}</span>`; button.addEventListener("click",()=>answer(choiceIndex,button)); $("answers").append(button); });
 }
 
@@ -63,10 +68,21 @@ function answer(choice, button) {
   buttons[item.a].classList.add("correct");
   if (choice === item.a) { score += 1; wrong.delete(item.id); } else { button.classList.add("wrong"); wrong.add(item.id); }
   localStorage.setItem(wrongKey,JSON.stringify([...wrong]));
-  $("explanation").textContent = item.e; $("explanation").hidden = false; $("nextQuestion").disabled = false; $("nextQuestion").textContent = index === queue.length-1 ? "결과 보기" : "다음 문제 →";
+  $("explanation").textContent = `기본 해설 · ${item.e}`; $("explanation").hidden = false; $("noteEditor").hidden = false; $("nextQuestion").disabled = false; $("nextQuestion").textContent = index === queue.length-1 ? "결과 보기" : "다음 문제 →";
+}
+
+function saveUserExplanation() {
+  const item = queue[index];
+  const value = $("userExplanation").value.trim();
+  if (value) userNotes[item.id] = value;
+  else delete userNotes[item.id];
+  localStorage.setItem(noteKey, JSON.stringify(userNotes));
+  $("noteStatus").textContent = value ? "저장되었습니다." : "저장된 메모를 삭제했습니다.";
 }
 
 function next() { if (index >= queue.length-1) finish(); else { index += 1; renderQuestion(); } }
 function finish() { clearInterval(timerId); timerId=null; $("quizStage").hidden=true; $("resultPanel").hidden=false; $("resultScore").textContent=`${score} / ${queue.length}`; const pct=Math.round(score/queue.length*100); $("resultMessage").textContent=pct>=60?`정답률 ${pct}% · 합격선 흐름입니다. 오답을 한 번 더 확인하세요.`:`정답률 ${pct}% · 저장된 오답부터 다시 풀어 보세요.`; }
 
-$("startQuiz").addEventListener("click",start); $("nextQuestion").addEventListener("click",next); $("quitQuiz").addEventListener("click",finish); $("restartQuiz").addEventListener("click",start);
+$("startQuiz").addEventListener("click",start); $("nextQuestion").addEventListener("click",next); $("quitQuiz").addEventListener("click",finish); $("restartQuiz").addEventListener("click",start); $("saveExplanation").addEventListener("click",saveUserExplanation);
+if (new URLSearchParams(window.location.search).get("mode") === "wrong") $("sourceSelect").value = "wrong";
+}
